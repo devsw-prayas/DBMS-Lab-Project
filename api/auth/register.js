@@ -1,8 +1,7 @@
-// Vercel serverless function — POST /api/auth/register
-// Stub: accepts any details and returns a mock user.
-// Replace with real DB insert once database is set up.
+import bcrypt from 'bcryptjs'
+import sql from '../_db.js'
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' })
   }
@@ -17,7 +16,26 @@ export default function handler(req, res) {
     return res.status(400).json({ message: 'Password must be at least 6 characters' })
   }
 
-  // TODO: check if email exists, hash password, insert into database
-  const user = { id: Date.now().toString(), email, name }
-  return res.status(201).json({ user })
+  try {
+    const existing = await sql`
+      SELECT id FROM users WHERE email = ${email.toLowerCase().trim()} LIMIT 1
+    `
+
+    if (existing.length > 0) {
+      return res.status(409).json({ message: 'An account with that email already exists' })
+    }
+
+    const password_hash = await bcrypt.hash(password, 10)
+
+    const rows = await sql`
+      INSERT INTO users (name, email, password_hash)
+      VALUES (${name.trim()}, ${email.toLowerCase().trim()}, ${password_hash})
+      RETURNING id, name, email
+    `
+
+    return res.status(201).json({ user: rows[0] })
+  } catch (err) {
+    console.error('Register error:', err)
+    return res.status(500).json({ message: 'Internal server error' })
+  }
 }
