@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { mockUsers, initialData } from '../../data/mockData';
 import { format } from 'date-fns';
 
 const TaskCard = ({ task, columnId, onRightClick }) => {
@@ -73,7 +72,7 @@ const TaskCard = ({ task, columnId, onRightClick }) => {
   );
 };
 
-const BoardColumn = ({ column, tasks, onRightClick }) => {
+const BoardColumn = ({ column, tasks, onRightClick, onAddTask }) => {
   return (
     <div 
       style={{
@@ -103,6 +102,7 @@ const BoardColumn = ({ column, tasks, onRightClick }) => {
       </div>
 
       <button 
+        onClick={() => onAddTask(column.id)}
         style={{
           width: '100%', padding: '8px', marginTop: '8px',
           color: 'var(--text-muted)', background: 'transparent',
@@ -116,8 +116,7 @@ const BoardColumn = ({ column, tasks, onRightClick }) => {
   );
 };
 
-export default function KanbanBoard() {
-  const [data, setData] = useState(initialData);
+export default function KanbanBoard({ data, updateBoard }) {
   const [contextMenu, setContextMenu] = useState(null); // { x, y, taskId, columnId }
 
   // Global click to close context menu
@@ -157,7 +156,7 @@ export default function KanbanBoard() {
     finishTaskIds.push(taskId); // Move to bottom
     const newFinish = { ...finishCol, taskIds: finishTaskIds };
 
-    setData({
+    updateBoard({
       ...data,
       columns: {
         ...data.columns,
@@ -179,13 +178,62 @@ export default function KanbanBoard() {
     const newTasks = { ...data.tasks };
     delete newTasks[taskId];
 
-    setData({
+    updateBoard({
       ...data,
       columns: { ...data.columns, [col.id]: { ...col, taskIds: newTaskIds } },
       tasks: newTasks
     });
 
     setContextMenu(null);
+  };
+
+  const addColumn = () => {
+    const title = window.prompt("Enter new column name:");
+    if (!title || title.trim() === '') return;
+    
+    const id = 'col-' + Date.now();
+    updateBoard({
+      ...data,
+      columns: {
+        ...data.columns,
+        [id]: { id, title, taskIds: [] }
+      },
+      columnOrder: [...data.columnOrder, id]
+    });
+  };
+
+  const addTask = (columnId) => {
+    const title = window.prompt("Enter task title:");
+    if (!title || title.trim() === '') return;
+
+    const id = 'task-' + Date.now();
+    const newTask = {
+      id,
+      title,
+      description: '',
+      tags: [],
+      assignees: [],
+      subtasks: [],
+      comments: []
+    };
+
+    const col = data.columns[columnId];
+    updateBoard({
+      ...data,
+      tasks: { ...data.tasks, [id]: newTask },
+      columns: { ...data.columns, [col.id]: { ...col, taskIds: [...col.taskIds, id] } }
+    });
+  };
+
+  const clearBoard = () => {
+    if(window.confirm("Are you sure you want to clear this board completely?")) {
+      updateBoard({
+        ...data,
+        tasks: {},
+        columns: {},
+        columnOrder: []
+      });
+    }
   };
 
   return (
@@ -195,8 +243,9 @@ export default function KanbanBoard() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>{data.board.title}</h2>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button style={{ padding: '6px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--rounded-md)', fontSize: '13px' }}>View Settings</button>
-          <button style={{ padding: '6px 12px', background: 'var(--text-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 'var(--rounded-md)', fontSize: '13px', fontWeight: '500' }}>Share Board</button>
+          <button onClick={clearBoard} style={{ padding: '6px 12px', background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)', borderRadius: 'var(--rounded-md)', fontSize: '13px' }}>Clear</button>
+          <button style={{ padding: '6px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--rounded-md)', fontSize: '13px' }}>Settings</button>
+          <button style={{ padding: '6px 12px', background: 'var(--text-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 'var(--rounded-md)', fontSize: '13px', fontWeight: '500' }}>Share</button>
         </div>
       </div>
 
@@ -204,8 +253,17 @@ export default function KanbanBoard() {
         {data.columnOrder.map((columnId) => {
           const column = data.columns[columnId];
           const tasks = column.taskIds.map(taskId => data.tasks[taskId]);
-          return <BoardColumn key={column.id} column={column} tasks={tasks} onRightClick={handleRightClick} />;
+          return <BoardColumn key={column.id} column={column} tasks={tasks} onRightClick={handleRightClick} onAddTask={addTask} />;
         })}
+
+        <div style={{ minWidth: '280px' }}>
+           <button 
+              onClick={addColumn}
+              style={{ width: '100%', padding: '16px', background: 'var(--bg-primary)', border: '1px dashed var(--border-color)', borderRadius: 'var(--rounded-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '14px', transition: 'all 0.2s ease' }}
+           >
+              + Add a custom list
+           </button>
+        </div>
       </div>
 
       {/* Floating Context Menu */}
@@ -225,6 +283,9 @@ export default function KanbanBoard() {
               {data.columns[colId].title}
             </button>
           ))}
+          {data.columnOrder.length <= 1 && (
+            <div style={{ padding: '4px 8px', fontSize: '11px', color: 'var(--text-muted)' }}>No other columns</div>
+          )}
           <div style={{ borderTop: '1px solid var(--border-color)', margin: '4px 0' }}></div>
           <button 
             className="context-menu-item" 
