@@ -41,12 +41,12 @@ const TaskCard = ({ task, index }) => {
             </div>
           )}
           
-          <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--text-primary)' }}>
+          <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--text-primary)', wordBreak: 'break-word' }}>
             {task.title}
           </h4>
           
           {task.description && (
-            <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>
               {task.description}
             </p>
           )}
@@ -108,6 +108,7 @@ const BoardColumn = ({ column, tasks }) => {
         flexDirection: 'column',
         width: '320px',
         minWidth: '320px',
+        flexShrink: 0,
         borderRadius: 'var(--rounded-lg)',
         padding: '16px',
         height: '100%',
