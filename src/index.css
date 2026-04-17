@@ -73,8 +73,6 @@ input, textarea {
 
 .glass-panel {
   background: var(--bg-secondary);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-glass);
 }

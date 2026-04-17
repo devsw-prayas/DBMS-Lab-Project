@@ -43,7 +43,7 @@ export default function Dashboard() {
       </aside>
 
       {/* Main Content Area */}
-      <main style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+      <main style={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         
         {/* Top Header */}
         <header style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', borderBottom: '1px solid var(--glass-border)', background: 'var(--bg-tertiary)', backdropFilter: 'blur(10px)' }}>
