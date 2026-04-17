@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import TaskModal from './TaskModal';
 
-const TaskCard = ({ task, columnId, onRightClick }) => {
+const TaskCard = ({ task, columnId, onRightClick, onClick }) => {
   return (
     <div
+      onClick={() => onClick(task.id)}
       onContextMenu={(e) => onRightClick(e, task.id, columnId)}
       style={{
         background: 'var(--bg-primary)',
@@ -11,7 +13,7 @@ const TaskCard = ({ task, columnId, onRightClick }) => {
         borderRadius: 'var(--rounded-md)',
         padding: '12px',
         marginBottom: '8px',
-        cursor: 'context-menu',
+        cursor: 'pointer',
         boxShadow: 'var(--shadow-sm)'
       }}
     >
@@ -72,7 +74,7 @@ const TaskCard = ({ task, columnId, onRightClick }) => {
   );
 };
 
-const BoardColumn = ({ column, tasks, onRightClick, onAddTask }) => {
+const BoardColumn = ({ column, tasks, onRightClick, onAddTask, onTaskClick }) => {
   return (
     <div 
       style={{
@@ -97,7 +99,7 @@ const BoardColumn = ({ column, tasks, onRightClick, onAddTask }) => {
 
       <div style={{ flexGrow: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} columnId={column.id} onRightClick={onRightClick} />
+          <TaskCard key={task.id} task={task} columnId={column.id} onRightClick={onRightClick} onClick={onTaskClick} />
         ))}
       </div>
 
@@ -117,7 +119,8 @@ const BoardColumn = ({ column, tasks, onRightClick, onAddTask }) => {
 };
 
 export default function KanbanBoard({ data, updateBoard }) {
-  const [contextMenu, setContextMenu] = useState(null); // { x, y, taskId, columnId }
+  const [contextMenu, setContextMenu] = useState(null);
+  const [activeTask, setActiveTask] = useState(null); // String ID
 
   // Global click to close context menu
   useEffect(() => {
@@ -127,7 +130,7 @@ export default function KanbanBoard({ data, updateBoard }) {
   }, []);
 
   const handleRightClick = (e, taskId, columnId) => {
-    e.preventDefault(); // Stop native browser menu
+    e.preventDefault();
     setContextMenu({
       x: e.clientX,
       y: e.clientY,
@@ -153,7 +156,7 @@ export default function KanbanBoard({ data, updateBoard }) {
     const newStart = { ...startCol, taskIds: startTaskIds };
 
     const finishTaskIds = Array.from(finishCol.taskIds);
-    finishTaskIds.push(taskId); // Move to bottom
+    finishTaskIds.push(taskId);
     const newFinish = { ...finishCol, taskIds: finishTaskIds };
 
     updateBoard({
@@ -225,6 +228,13 @@ export default function KanbanBoard({ data, updateBoard }) {
     });
   };
 
+  const updateActiveTask = (updatedTask) => {
+    updateBoard({
+      ...data,
+      tasks: { ...data.tasks, [updatedTask.id]: updatedTask }
+    });
+  };
+
   const clearBoard = () => {
     if(window.confirm("Are you sure you want to clear this board completely?")) {
       updateBoard({
@@ -253,7 +263,7 @@ export default function KanbanBoard({ data, updateBoard }) {
         {data.columnOrder.map((columnId) => {
           const column = data.columns[columnId];
           const tasks = column.taskIds.map(taskId => data.tasks[taskId]);
-          return <BoardColumn key={column.id} column={column} tasks={tasks} onRightClick={handleRightClick} onAddTask={addTask} />;
+          return <BoardColumn key={column.id} column={column} tasks={tasks} onRightClick={handleRightClick} onAddTask={addTask} onTaskClick={setActiveTask} />;
         })}
 
         <div style={{ minWidth: '280px' }}>
@@ -296,6 +306,13 @@ export default function KanbanBoard({ data, updateBoard }) {
           </button>
         </div>
       )}
+
+      {/* Interactive Task Modal */}
+      <TaskModal 
+        task={activeTask ? data.tasks[activeTask] : null}
+        onClose={() => setActiveTask(null)}
+        onUpdateTask={updateActiveTask}
+      />
 
     </div>
   );
