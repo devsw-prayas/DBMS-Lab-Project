@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Calendar, AlignLeft, CheckSquare, MessageSquare } from 'lucide-react';
+import { X, Calendar, AlignLeft, CheckSquare, MessageSquare, Tag } from 'lucide-react';
 
 export default function TaskModal({ task, onClose, onUpdateTask }) {
   if (!task) return null;
@@ -9,6 +9,10 @@ export default function TaskModal({ task, onClose, onUpdateTask }) {
   const [description, setDescription] = useState(task.description || '');
   const [dueDate, setDueDate] = useState(task.dueDate ? task.dueDate.split('T')[0] : '');
   const [newSubtask, setNewSubtask] = useState('');
+  
+  // Tag creation state
+  const [newTagName, setNewTagName] = useState('');
+  const [newTagColor, setNewTagColor] = useState('#10b981'); // default green
 
   const handleTitleBlur = () => {
     if (title !== task.title) onUpdateTask({ ...task, title });
@@ -24,6 +28,7 @@ export default function TaskModal({ task, onClose, onUpdateTask }) {
     onUpdateTask({ ...task, dueDate: newDate ? new Date(newDate).toISOString() : null });
   };
 
+  /** Subtask Logic */
   const toggleSubtask = (stId) => {
     const updatedSubtasks = task.subtasks.map(st => 
       st.id === stId ? { ...st, isCompleted: !st.isCompleted } : st
@@ -38,6 +43,18 @@ export default function TaskModal({ task, onClose, onUpdateTask }) {
     const newSt = { id: 'st-' + Date.now(), title: newSubtask, isCompleted: false };
     onUpdateTask({ ...task, subtasks: [...(task.subtasks || []), newSt] });
     setNewSubtask('');
+  };
+
+  /** Tag Logic */
+  const addTag = () => {
+    if (!newTagName.trim()) return;
+    const newTag = { id: 'tag-' + Date.now(), name: newTagName, color: newTagColor };
+    onUpdateTask({ ...task, tags: [...(task.tags || []), newTag] });
+    setNewTagName('');
+  };
+
+  const removeTag = (tagId) => {
+    onUpdateTask({ ...task, tags: task.tags.filter(t => t.id !== tagId) });
   };
 
   return (
@@ -141,9 +158,10 @@ export default function TaskModal({ task, onClose, onUpdateTask }) {
             
             {/* Due Date Editor */}
             <div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Due Date</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                 <Calendar size={14}/> Due Date
+              </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', padding: '8px', borderRadius: 'var(--rounded-md)', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-                <Calendar size={14} color="var(--text-secondary)" />
                 <input 
                   type="date" 
                   value={dueDate}
@@ -153,17 +171,46 @@ export default function TaskModal({ task, onClose, onUpdateTask }) {
               </div>
             </div>
 
-            {/* Tags (Display Only Map for now to keep code simple) */}
+            {/* Tags Configurator */}
             <div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tags</span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                 <Tag size={14}/> Tags & Colors
+              </span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px', marginBottom: '12px' }}>
                 {(task.tags || []).map(tag => (
-                   <span key={tag.id} style={{ border: `1px solid ${tag.color}`, color: tag.color, padding: '2px 8px', borderRadius: 'var(--rounded-sm)', fontSize: '11px', fontWeight: '500' }}>
+                   <span key={tag.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', border: `1px solid ${tag.color}`, background: `${tag.color}15`, color: tag.color, padding: '4px 8px', borderRadius: 'var(--rounded-md)', fontSize: '11px', fontWeight: '500' }}>
                      {tag.name}
+                     <button onClick={() => removeTag(tag.id)} style={{ display: 'flex', color: tag.color }}><X size={12} /></button>
                    </span>
                 ))}
-                {(task.tags || []).length === 0 && <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>None</span>}
+                {(task.tags || []).length === 0 && <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No tags applied</span>}
               </div>
+
+              {/* Tag Creation Form */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--rounded-md)', padding: '8px' }}>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input 
+                    type="color" 
+                    value={newTagColor}
+                    onChange={e => setNewTagColor(e.target.value)}
+                    style={{ width: '24px', height: '24px', padding: 0, border: 'none', cursor: 'pointer', borderRadius: '4px', overflow: 'hidden' }}
+                  />
+                  <input 
+                    type="text"
+                    value={newTagName}
+                    onChange={e => setNewTagName(e.target.value)}
+                    placeholder="New tag label..."
+                    style={{ flexGrow: 1, fontSize: '12px', border: '1px solid var(--border-color)', borderRadius: 'var(--rounded-sm)', padding: '2px 6px' }}
+                  />
+                </div>
+                <button 
+                  onClick={addTag}
+                  style={{ width: '100%', padding: '4px', fontSize: '11px', fontWeight: '500', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--rounded-sm)' }}
+                >
+                  Create Custom Tag
+                </button>
+              </div>
+
             </div>
 
           </div>
